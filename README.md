@@ -1,14 +1,14 @@
 # tanzu-rabbitmq
 
 ![RabbitMQ logo](rabbitmq.png)
-![Alt text](rabbitmq?raw=true "Title")
+
 https://docs.vmware.com/en/Cluster-Essentials-for-VMware-Tanzu/1.2/cluster-essentials/GUID-deploy.html
 
 https://docs.vmware.com/en/VMware-Tanzu-RabbitMQ-for-Kubernetes/1.3/tanzu-rmq/GUID-installation.html
 
 https://blog.rabbitmq.com/posts/2020/04/quorum-queues-and-why-disks-matter/
 
-
+# Cluster Specification
 3 node clusters
 Instance type: c4.4xlarge:
 16 vCPUs

@@ -33,34 +33,3 @@ kapp deploy -a tanzu-rabbitmq -f packageinstall.yml -y
 # kubectl apply -f tanzu-rabbitmq-registry-creds.yml
 # kapp deploy -a rmq-cluster -f rmq.yml -y
 # sleep  60
-# kubectl exec tanzu-rabbit-demo-2-server-0 -- rabbitmqctl add_user arul pas234Uo12
-# kubectl exec tanzu-rabbit-demo-2-server-0 -- rabbitmqctl set_permissions  -p / arul ".*" ".*" ".*"
-# kubectl exec tanzu-rabbit-demo-2-server-0 -- rabbitmqctl set_user_tags arul administrator
-# kubectl apply -f tanzu-rabbitmq-replication.yaml
-# kubectl exec tanzu-hare-server-0 -- rabbitmq-diagnostics resolve_hostname hare.gke.arullab.com --address-family 34.172.66.96 --offline
-# #
-user: app password: CHANGEME
-
-kubectl exec tanzu-bunny-server-0 -- rabbitmqctl add_user arul pas234Uo12
-kubectl exec tanzu-bunny-server-0 -- rabbitmqctl set_permissions  -p / arul ".*" ".*" ".*"
-kubectl exec tanzu-bunny-server-0 -- rabbitmqctl set_user_tags arul administrator
-#
-kubectl exec tanzu-hare-server-0 -- rabbitmqctl add_user arul pas234Uo12
-kubectl exec tanzu-hare-server-0 -- rabbitmqctl set_permissions  -p / arul ".*" ".*" ".*"
-kubectl exec tanzu-hare-server-0 -- rabbitmqctl set_user_tags arul administrator
-
-kubectl exec tanzu-hare-server-0 -- rabbitmqctl add_user app  CHANGEME
-kubectl exec tanzu-hare-server-0 -- rabbitmqctl set_permissions  -p / app ".*" ".*" ".*"
-kubectl exec tanzu-hare-server-0 -- rabbitmqctl set_user_tags app administrator
-#
-# kubectl exec tanzu-hare-server-0 -- rabbitmqctl add_vhost rabbitmq_schema_definition_sync
-#
-# # Create a user and grant it permissions to the virtual host that will be
-# # used for schema replication.
-# # This command is similar to 'rabbitmqctl add_user' but also grants full permissions
-# # to the virtual host used for definition sync.
-# kubectl exec tanzu-hare-server-0 --  rabbitmqctl add_schema_replication_user "schema-replicator" "$3kRe7"
-#
-# # specify local (upstream cluster) nodes and credentials to be used
-# # for schema replication
-# rabbitmqctl set_schema_replication_upstream_endpoints '{"endpoints": ["a.rabbitmq.eu-1.local:5672","b.rabbitmq.eu-1.local:5672","c.rabbitmq.eu-1.local:5672"], "username": "schema-replicator", "password": "$3kRe7"}'
