@@ -1,6 +1,6 @@
 # tanzu-rabbitmq
 
-![RabbitMQ logo](tanzu-rabbitmq-replication.png)
+![RabbitMQ logo](/tanzu-rabbitmq-replication.png)
 https://docs.vmware.com/en/Cluster-Essentials-for-VMware-Tanzu/1.2/cluster-essentials/GUID-deploy.html
 
 https://docs.vmware.com/en/VMware-Tanzu-RabbitMQ-for-Kubernetes/1.3/tanzu-rmq/GUID-installation.html
