@@ -2,10 +2,14 @@
 
 ![RabbitMQ logo](rabbitmq.png)
 
-https://docs.vmware.com/en/Cluster-Essentials-for-VMware-Tanzu/1.2/cluster-essentials/GUID-deploy.html
 
+# official docs to install Tanzu RabbitMQ
 https://docs.vmware.com/en/VMware-Tanzu-RabbitMQ-for-Kubernetes/1.3/tanzu-rmq/GUID-installation.html
 
+# Install Cluster Essentials
+https://docs.vmware.com/en/Cluster-Essentials-for-VMware-Tanzu/1.2/cluster-essentials/GUID-deploy.html
+
+# RabbitMQ Cluster Specs
 https://blog.rabbitmq.com/posts/2020/04/quorum-queues-and-why-disks-matter/
 
 # Cluster Specification
