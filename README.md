@@ -28,3 +28,5 @@ Cluster rabbitmq13, HDD1=data/logs/segment HDD2=wal
 Assign classic queue data, segment files and WAL files their own dedicated drive each
 Cluster rabbitmq7, SSD1=data/logs SSD2=segment SSD3=wal
 Cluster rabbitmq16, HDD1=data/logs HDD2=segment HDD3=wal
+
+![RabbitMQ logo](TanzuRMQ_Architecture.png)
