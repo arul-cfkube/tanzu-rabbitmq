@@ -1,0 +1,339 @@
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: tanzu-hare
+  namespace: default
+spec:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "1"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  imagePullSecrets:
+  - name: reg-creds
+  rabbitmq:
+    additionalPlugins:
+      - rabbitmq_stream
+      - rabbitmq_schema_definition_sync
+      - rabbitmq_schema_definition_sync_prometheus # optional
+      - rabbitmq_standby_replication
+      - rabbitmq_shovel_management
+    additionalConfig: |
+      schema_definition_sync.operating_mode = upstream
+      standby.replication.operating_mode = upstream
+      # message stream retention limit (can either be size or time based)
+      standby.replication.retention.size_limit.messages = 5000000000
+      # standby.replication.retention.time_limit.messages = 12h'
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            containers: []
+            securityContext:
+              runAsUser: 999
+              runAsGroup: 999
+              fsGroup: 999
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: tanzu-bunny
+  namespace: default
+spec:
+  replicas: 1
+  resources:
+    requests:
+      cpu: "1"
+      memory: "1Gi"
+    limits:
+      cpu: "1"
+      memory: "1Gi"
+  imagePullSecrets:
+  - name: reg-creds
+  rabbitmq:
+    additionalPlugins:
+      - rabbitmq_stream
+      - rabbitmq_schema_definition_sync
+      - rabbitmq_schema_definition_sync_prometheus
+      - rabbitmq_standby_replication
+    additionalConfig: |
+      schema_definition_sync.operating_mode = downstream
+      standby.replication.operating_mode = downstream
+      schema_definition_sync.downstream.locals.users = ^default_user_
+      schema_definition_sync.downstream.locals.global_parameters = ^standby
+      # message stream retention limit (can either be size or time based)
+      standby.replication.retention.size_limit.messages = 5000000000
+      # standby.replication.retention.time_limit.messages = 12h
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            containers: []
+            securityContext:
+              runAsUser: 999
+              runAsGroup: 999
+              fsGroup: 999
+---
+apiVersion: v1
+kind: Secret
+metadata:
+  name: ha-users-2
+  namespace: default
+type: Opaque
+stringData:
+  username: replicator
+  password: supersecret
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: User
+metadata:
+  name: replicator-hare
+  namespace: default
+spec:
+  tags:
+  - administrator
+  rabbitmqClusterReference:
+    name: tanzu-hare
+  importCredentialsSecret:
+    name: ha-users-2
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Permission
+metadata:
+  name: replicator-all-new
+  namespace: default
+spec:
+  vhost: "/"
+  userReference:
+    name: "replicator-hare"
+  permissions:
+    write: ".*"
+    configure: ".*"
+    read: ".*"
+  rabbitmqClusterReference:
+    name: tanzu-hare
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: SchemaReplication
+metadata:
+  name: tanzu-hare-upstream
+  namespace: default
+spec:
+  upstreamSecret:
+    name: ha-users-2
+  endpoints: "tanzu-bunny.default.svc:5672"
+  rabbitmqClusterReference:
+    name: tanzu-hare
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: SchemaReplication
+metadata:
+  name: tanzu-bunny-downstream
+  namespace: default
+spec:
+  upstreamSecret:
+    name: ha-users-2
+  endpoints: "tanzu-hare.default.svc:5672"
+  rabbitmqClusterReference:
+    name: tanzu-bunny
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Vhost
+metadata:
+  name: rabbitmq-schema-definition-sync
+spec:
+  name: rabbitmq_schema_definition_sync
+  rabbitmqClusterReference:
+    name: tanzu-hare
+
+---
+apiVersion: rabbitmq.tanzu.vmware.com/v1beta1
+kind: StandbyReplication
+metadata:
+  name: hare-configuration
+spec:
+  operatingMode: "upstream" # has to be "upstream" to configure an upstream RabbitMQ cluster; required value
+  upstreamModeConfiguration: # list of policies that Operator will create
+    replicationPolicies:
+      - name: test-policy # policy name; required value
+        pattern: "^.*" # any regex expression that will be used to match quorum queues name; required value
+        vhost: "/" # vhost name; must be an existing vhost; required value
+  rabbitmqClusterReference:
+    name: tanzu-hare
+
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Vhost
+metadata:
+  name: test
+spec:
+  name: "/"
+  tags: [standby_replication]
+  rabbitmqClusterReference:
+    name: tanzu-hare
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Vhost
+metadata:
+  name: test1
+spec:
+  name: "/"
+  tags: [standby_replication]
+  rabbitmqClusterReference:
+    name: tanzu-bunny
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Permission
+metadata:
+  name: rabbitmq-replicator-defaultvhost-all-new
+spec:
+  vhost: "/" # name of a vhost
+  userReference:
+    name: replicator-hare
+  permissions:
+    write: ".*"
+    configure: ".*"
+    read: ".*"
+  rabbitmqClusterReference:
+    name: tanzu-hare  # the upstream RabbitMQ cluster name. It must be in the same namespace and it is a mandatory value.
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: Permission
+metadata:
+  name: rabbitmq-replicator.rabbitmq-schema-definition-sync.all-new1
+spec:
+  vhost: "/" # name of a vhost
+  userReference:
+    name: replicator-bunny1
+  permissions:
+    write: ".*"
+    configure: ".*"
+    read: ".*"
+  rabbitmqClusterReference:
+    name: tanzu-bunny # the downstream RabbitMQ cluster name. It must be in the same namespace and it is a mandatory value.
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: SchemaReplication
+metadata:
+  name: downstream
+spec:
+  endpoints: "tanzu-bunny.default.svc:5672"
+  upstreamSecret:
+    name: ha-users-2
+  rabbitmqClusterReference:
+    name: tanzu-bunny  # the downstream RabbitMQ cluster name. It must be in the same namespace and it is a mandatory value.
+
+---
+apiVersion: rabbitmq.tanzu.vmware.com/v1beta1
+kind: StandbyReplication
+metadata:
+  name: downstream-configuration
+spec:
+  operatingMode: "downstream" # has to be "downstream" to configure an downstream RabbitMQ cluster
+  downstreamModeConfiguration:
+    endpoints: "tanzu-hare.default.svc:5672" # comma separated list of endpoints to the upstream RabbitMQ
+    upstreamSecret:
+      name: ha-users-2 # an existing Kubernetes secret; required value
+  rabbitmqClusterReference:
+    name: tanzu-bunny
+---
+apiVersion: rabbitmq.com/v1beta1
+kind: User
+metadata:
+  name: replicator-bunny1
+  namespace: default
+spec:
+  tags:
+  - administrator
+  rabbitmqClusterReference:
+    name: tanzu-bunny
+  importCredentialsSecret:
+    name: ha-users-2
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rabbitmq-bunny
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    ingress.kubernetes.io/force-ssl-redirect: "true"
+    kubernetes.io/ingress.class: contour
+    kubernetes.io/tls-acme: "true"
+spec:
+  tls:
+  - secretName: bunnyrabbitmq
+    hosts:
+    - bunny.gke.arullab.com
+  rules:
+  - host: bunny.gke.arullab.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: tanzu-bunny
+            port:
+              number: 15672
+
+---
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: rabbitmq-hare
+  annotations:
+    cert-manager.io/cluster-issuer: letsencrypt-prod
+    ingress.kubernetes.io/force-ssl-redirect: "true"
+    kubernetes.io/ingress.class: contour
+    kubernetes.io/tls-acme: "true"
+spec:
+  tls:
+  - secretName: harerabbitmq
+    hosts:
+    - hare.gke.arullab.com
+  rules:
+  - host: hare.gke.arullab.com
+    http:
+      paths:
+      - pathType: Prefix
+        path: /
+        backend:
+          service:
+            name: tanzu-hare
+            port:
+              number: 15672
+
+# ---
+# apiVersion: projectcontour.io/v1
+# kind: HTTPProxy
+# metadata:
+#   name: rmq1proxy
+# spec:
+#   virtualhost:
+#     fqdn: hare.gke.arullab.com
+#     tls:
+#       secretName: tls-secret-gke
+#   routes:
+#   - services:
+#     - name: tanzu-hare
+#       port: 15672
+#
+# ---
+# apiVersion: cert-manager.io/v1
+# kind: Certificate
+# metadata:
+#   name: rmq-cert
+# spec:
+#   commonName: hare.gke.arullab.com
+#   dnsNames:
+#   - hare.gke.arullab.com
+#   issuerRef:
+#     name: letsencrypt-prod
+#     kind: ClusterIssuer
+#   secretName: tls-secret-gke
