@@ -3,7 +3,7 @@
 # #while [[ $(tmc cluster get tanzu-demo -o json | jq -r .status.phase) == "READY" ]]; do tmc cluster get tanzu-demo -o json | jq  -r .status.phase; sleep 5 ; done
 # tmc cluster auth kubeconfig get tanzu-demo > ~/.kube/config
 #tanzu package install cert-manager --package-name cert-manager.tanzu.vmware.com --namespace cert-manager  --version 1.7.2+vmware.1-tkg.1  --create-namespace
-kubeclt apply cert-manger-package.yml
+#kubeclt apply cert-manger-package.yml
 tanzu package installed update cert-manager --package-name cert-manager.tanzu.vmware.com --namespace cert-manager  --version 1.7.2+vmware.1-tkg.1  -f cert-manger-package.yml
 
 #Open Source carvel
@@ -30,6 +30,6 @@ kubectl get packages | grep rabbit
 #kubectl -n rabbitmq-system create secret generic rabbitmq-ca --from-file=ca.crt=/Users/avannala/Documents/workspace/rabbitmq/config/live/rabbitmq.arullab.com/fullchain.pem
 kapp deploy -a tanzu-rabbitmq -f packageinstall.yml -y
 
-# kubectl apply -f tanzu-rabbitmq-registry-creds.yml
-# kapp deploy -a rmq-cluster -f rmq.yml -y
+kubectl apply -f tanzu-rabbitmq-registry-creds.yml
+kapp deploy -a rmq-cluster -f rmq.yml -y
 # sleep  60

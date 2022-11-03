@@ -1,0 +1,8 @@
+apiVersion: v1
+data:
+  .dockerconfigjson: $$$REPALCE$$
+metadata:
+  creationTimestamp: null
+  name: reg-creds
+  namespace: secrets-ns
+type: kubernetes.io/dockerconfigjson

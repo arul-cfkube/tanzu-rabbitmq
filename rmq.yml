@@ -1,0 +1,53 @@
+apiVersion: rabbitmq.com/v1beta1
+kind: RabbitmqCluster
+metadata:
+  name: tanzu-rabbitmq-dev
+  namespace: default
+spec:
+  replicas: 3
+  service:
+    type: ClusterIP
+  resources:
+    requests:
+      cpu: "1"
+      memory: 6Gi
+    limits:
+      cpu: "1"
+      memory: 6Gi
+  persistence:
+    storage: 50Gi
+  rabbitmq:
+    additionalPlugins:
+      - rabbitmq_mqtt
+      - rabbitmq_shovel
+      - rabbitmq_stream
+      - rabbitmq_stream_management
+      - rabbitmq_stream_prometheus
+      - rabbitmq_schema_definition_sync
+      - rabbitmq_schema_definition_sync_prometheus # optional
+      - rabbitmq_standby_replication
+    additionalConfig: |
+      schema_definition_sync.operating_mode = upstream
+      standby.replication.operating_mode = upstream
+      # message stream retention limit (can either be size or time based)
+      standby.replication.retention.size_limit.messages = 5000000000
+      # standby.replication.retention.time_limit.messages = 12h
+  imagePullSecrets:
+  - name: tanzu-rabbitmq-registry-creds
+  override:
+    statefulSet:
+      spec:
+        template:
+          spec:
+            containers: []
+            securityContext:
+              runAsUser: 999
+              runAsGroup: 999
+              fsGroup: 999
+            topologySpreadConstraints:
+            - maxSkew: 1
+              topologyKey: topology.kubernetes.io/zone
+              whenUnsatisfiable: DoNotSchedule
+              labelSelector:
+                matchLabels:
+                  app.kubernetes.io/name: tanzu-rabbit-demo
